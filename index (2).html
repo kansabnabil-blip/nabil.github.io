@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESI WORLD — Oued Smar</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#000;overflow:hidden;font-family:'Press Start 2P',monospace;}
+#title-screen{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;}
+#title-bg{position:absolute;inset:0;background:url('ESI-entree-.jpg') center/cover no-repeat;opacity:0.35;}
+#title-content{position:relative;z-index:2;text-align:center;}
+.gtitle{font-size:clamp(28px,6vw,72px);color:#00ff41;text-shadow:0 0 30px #00ff41,0 0 60px #00aa00;letter-spacing:6px;margin-bottom:8px;}
+.gsubtitle{font-size:clamp(9px,2vw,16px);color:#ffdd00;letter-spacing:3px;margin-bottom:4px;}
+.glocation{font-size:clamp(7px,1.5vw,12px);color:#888;margin-bottom:40px;letter-spacing:2px;}
+.esi-sign{border:3px solid #ffdd00;padding:16px 32px;margin-bottom:32px;background:rgba(0,0,0,0.7);}
+.esi-sign-ar{font-size:clamp(10px,2vw,18px);color:#ffdd00;margin-bottom:6px;font-family:sans-serif;}
+.esi-sign-fr{font-size:clamp(7px,1.5vw,13px);color:#fff;font-family:'Press Start 2P',monospace;}
+#name-section{margin-bottom:24px;}
+#name-section label{color:#aaa;font-size:9px;display:block;margin-bottom:10px;}
+#player-name-input{background:#111;border:2px solid #00ff41;color:#00ff41;font-family:'Press Start 2P',monospace;font-size:13px;padding:10px 16px;text-align:center;outline:none;width:240px;}
+.play-btn{background:transparent;border:3px solid #00ff41;color:#00ff41;font-family:'Press Start 2P',monospace;font-size:12px;padding:14px 36px;cursor:pointer;letter-spacing:2px;margin-top:12px;transition:all .2s;}
+.play-btn:hover{background:#00ff41;color:#000;}
+#controls-hint{font-size:8px;color:#555;margin-top:24px;line-height:2.2;}
+
+/* HUD */
+#hud{position:fixed;top:0;left:0;right:0;z-index:50;display:none;pointer-events:none;}
+#hud-top{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 14px;}
+.hud-panel{background:rgba(0,0,0,0.8);border:1px solid #333;padding:8px 12px;font-size:8px;color:#fff;}
+.hud-name-val{color:#00ff41;font-size:10px;}
+.hud-stat{display:flex;align-items:center;gap:6px;margin-top:4px;}
+.hud-stat label{color:#888;font-size:7px;width:40px;}
+.bar{width:80px;height:7px;background:#222;border:1px solid #444;}
+.bar-fill{height:100%;transition:width .4s;}
+.hp-fill{background:#e74c3c;}
+.stamina-fill{background:#3498db;}
+#minimap{width:140px;height:110px;background:rgba(0,0,0,0.85);border:1px solid #444;position:relative;overflow:hidden;}
+#minimap-canvas{width:100%;height:100%;}
+#location-badge{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);border:1px solid #ffdd00;color:#ffdd00;font-size:9px;padding:8px 18px;z-index:50;display:none;text-align:center;letter-spacing:1px;}
+#interaction-hint{position:fixed;bottom:110px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);border:1px solid #00ff41;color:#00ff41;font-size:8px;padding:7px 16px;z-index:50;display:none;letter-spacing:1px;}
+#dialog-box{position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.95);border-top:2px solid #00ff41;padding:14px 20px;z-index:60;display:none;}
+#dialog-speaker{color:#ffdd00;font-size:9px;margin-bottom:6px;}
+#dialog-text{color:#e0e0e0;font-family:'Press Start 2P',monospace;font-size:9px;line-height:1.8;min-height:40px;}
+#dialog-choices{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+.dchoice{background:transparent;border:1px solid #00ff41;color:#00ff41;font-family:'Press Start 2P',monospace;font-size:8px;padding:7px 12px;cursor:pointer;}
+.dchoice:hover{background:#00ff41;color:#000;}
+#notification{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);border:1px solid #ffdd00;color:#ffdd00;font-size:9px;padding:8px 18px;z-index:80;display:none;letter-spacing:1px;}
+#phone-ui{position:fixed;bottom:10px;right:10px;z-index:50;display:none;}
+#phone-btn{background:rgba(0,0,0,0.8);border:1px solid #555;color:#aaa;font-family:'Press Start 2P',monospace;font-size:7px;padding:6px 10px;cursor:pointer;}
+
+/* Canvas */
+#game-canvas{display:block;cursor:crosshair;}
+
+/* Mobile controls */
+#mobile-controls{position:fixed;bottom:10px;left:10px;z-index:55;display:none;}
+.dpad{display:grid;grid-template-columns:repeat(3,40px);grid-template-rows:repeat(3,40px);gap:3px;}
+.dpad-btn{background:rgba(0,0,0,0.7);border:1px solid #444;color:#aaa;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:4px;user-select:none;}
+.dpad-btn:active{background:rgba(255,255,255,0.2);}
+
+#score-display{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);border:1px solid #444;color:#fff;font-size:8px;padding:6px 14px;z-index:50;display:none;letter-spacing:1px;}
+</style>
+</head>
+<body>
+
+<!-- TITLE SCREEN -->
+<div id="title-screen">
+  <div id="title-bg"></div>
+  <div id="title-content">
+    <div class="gtitle">ESI WORLD</div>
+    <div class="gsubtitle">OPEN WORLD — OUED SMAR</div>
+    <div class="glocation">📍 ALGER, ALGÉRIE</div>
+    <div class="esi-sign">
+      <div class="esi-sign-ar">المدرسة الوطنية العليا للإعلام الآلي</div>
+      <div class="esi-sign-fr">ÉCOLE NATIONALE SUPÉRIEURE<br>D'INFORMATIQUE</div>
+    </div>
+    <div id="name-section">
+      <label>ENTREZ VOTRE NOM:</label>
+      <input id="player-name-input" type="text" maxlength="12" placeholder="VOTRE NOM..." />
+    </div>
+    <button class="play-btn" onclick="startGame()">▶ JOUER</button>
+    <div id="controls-hint">
+      ↑ ↓ ← → MARCHER &nbsp;|&nbsp; E INTERAGIR &nbsp;|&nbsp; B BUS &nbsp;|&nbsp; ESC PAUSE
+    </div>
+  </div>
+</div>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="hud-top">
+    <div class="hud-panel">
+      <div class="hud-name-val" id="hud-name">---</div>
+      <div style="color:#888;font-size:7px;margin-bottom:6px;">ÉTUDIANT ESI</div>
+      <div class="hud-stat">
+        <label>SANTÉ</label>
+        <div class="bar"><div class="bar-fill hp-fill" id="hp-fill" style="width:100%"></div></div>
+      </div>
+      <div class="hud-stat">
+        <label>STAMINA</label>
+        <div class="bar"><div class="bar-fill stamina-fill" id="stamina-fill" style="width:100%"></div></div>
+      </div>
+      <div style="margin-top:6px;font-size:7px;color:#888;">
+        💰 <span id="hud-money">0</span> DA &nbsp; ⭐ <span id="hud-grade">50</span>/100
+      </div>
+    </div>
+    <div>
+      <div id="score-display" style="position:relative;top:0;left:0;transform:none;margin-bottom:4px;">WANTED: <span id="wanted-stars">☆☆☆</span></div>
+      <div class="hud-panel" style="padding:4px;">
+        <div style="font-size:7px;color:#888;margin-bottom:3px;text-align:center;">MINIMAP</div>
+        <div id="minimap"><canvas id="minimap-canvas" width="140" height="95"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="location-badge" id="loc-badge"></div>
+<div id="interaction-hint"></div>
+<div id="notification"></div>
+
+<!-- DIALOG -->
+<div id="dialog-box">
+  <div id="dialog-speaker"></div>
+  <div id="dialog-text"></div>
+  <div id="dialog-choices"></div>
+</div>
+
+<!-- GAME CANVAS -->
+<canvas id="game-canvas"></canvas>
+
+<!-- Mobile Controls -->
+<div id="mobile-controls">
+  <div class="dpad">
+    <div></div>
+    <div class="dpad-btn" id="btn-up">▲</div>
+    <div></div>
+    <div class="dpad-btn" id="btn-left">◄</div>
+    <div class="dpad-btn" style="font-size:9px;" onclick="tryInteract()">E</div>
+    <div class="dpad-btn" id="btn-right">►</div>
+    <div></div>
+    <div class="dpad-btn" id="btn-down">▼</div>
+    <div></div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const mmCanvas = document.getElementById('minimap-canvas');
+const mmCtx = mmCanvas.getContext('2d');
+
+// ---- WORLD CONFIG ----
+const TILE = 40;
+const WORLD_W = 80;
+const WORLD_H = 60;
+const SPEED = 3;
+const SPRINT = 5;
+
+let playerName = "ÉTUDIANT";
+let hp = 100, stamina = 100, money = 500, grade = 50, wanted = 0;
+let gameRunning = false;
+let dialogOpen = false;
+let camX = 0, camY = 0;
+
+// Player
+const player = {
+  x: 1600, y: 1200,
+  w: 22, h: 28,
+  dir: 'down',
+  moving: false,
+  animFrame: 0,
+  animTimer: 0,
+  sprinting: false,
+  onBus: false,
+};
+
+// Keys
+const keys = {};
+window.addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if(e.key === 'e' || e.key === 'E') tryInteract();
+  if(e.key === 'b' || e.key === 'B') tryBus();
+  if(e.key === 'Escape') closeDialog();
+});
+window.addEventListener('keyup', e => { keys[e.key] = false; });
+
+// Mobile buttons
+function setupMobile() {
+  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth < 700;
+  if(isMobile) document.getElementById('mobile-controls').style.display='block';
+  const btnMap = {
+    'btn-up': 'ArrowUp', 'btn-down': 'ArrowDown',
+    'btn-left': 'ArrowLeft', 'btn-right': 'ArrowRight'
+  };
+  Object.entries(btnMap).forEach(([id, key]) => {
+    const btn = document.getElementById(id);
+    btn.addEventListener('touchstart', e => { e.preventDefault(); keys[key]=true; }, {passive:false});
+    btn.addEventListener('touchend', e => { e.preventDefault(); keys[key]=false; }, {passive:false});
+    btn.addEventListener('mousedown', () => keys[key]=true);
+    btn.addEventListener('mouseup', () => keys[key]=false);
+  });
+}
+
+// ---- WORLD MAP ----
+// Tile types: 0=road, 1=building, 2=grass, 3=wall, 4=water, 5=sidewalk, 6=sand
+const ROAD=0,BLDG=1,GRASS=2,WALL=3,WATER=4,SIDE=5,SAND=6,PARK=7;
+
+function buildWorld() {
+  const w = Array.from({length:WORLD_H}, () => new Array(WORLD_W).fill(GRASS));
+
+  // Main road horizontal (Route nationale)
+  for(let x=0;x<WORLD_W;x++) for(let y=17;y<=21;y++) w[y][x]=ROAD;
+  // Main road vertical
+  for(let y=0;y<WORLD_H;y++) for(let x=35;x<=39;x++) w[y][x]=ROAD;
+  // Second horizontal road
+  for(let x=0;x<WORLD_W;x++) for(let y=38;y<=42;y++) w[y][x]=ROAD;
+  // Side streets
+  for(let y=0;y<WORLD_H;y++) for(let x=10;x<=12;x++) w[y][x]=ROAD;
+  for(let y=0;y<WORLD_H;y++) for(let x=58;x<=60;x++) w[y][x]=ROAD;
+  for(let x=0;x<WORLD_W;x++) for(let y=5;y<=7;y++) w[y][x]=ROAD;
+  for(let x=0;x<WORLD_W;x++) for(let y=52;y<=54;y++) w[y][x]=ROAD;
+
+  // Sidewalks
+  [[16,SIDE],[22,SIDE],[37,SIDE],[43,SIDE]].forEach(([y,t]) => {
+    for(let x=0;x<WORLD_W;x++) w[y][x]=t;
+  });
+
+  // ESI CAMPUS (main attraction) — big complex
+  for(let y=23;y<=36;y++) for(let x=41;x<=57;x++) {
+    if(y===23||y===36||x===41||x===57) w[y][x]=WALL;
+    else if(y>=25&&y<=34&&x>=43&&x<=55) w[y][x]=BLDG;
+    else w[y][x]=SAND;
+  }
+  // ESI entrance road
+  for(let y=23;y<=36;y++) for(let x=38;x<=40;x++) w[y][x]=SIDE;
+  // ESI gate columns
+  w[29][41]=WALL; w[30][41]=WALL; w[31][41]=WALL;
+
+  // ESI Amphitheater
+  for(let y=26;y<=30;y++) for(let x=44;x<=50;x++) w[y][x]=BLDG;
+  // ESI Library
+  for(let y=31;y<=35;y++) for(let x=44;x<=48;x++) w[y][x]=BLDG;
+  // ESI Lab
+  for(let y=26;y<=35;y++) for(let x=51;x<=55;x++) w[y][x]=BLDG;
+
+  // City blocks — residential
+  const blocks = [
+    [1,14,0,9],[1,14,13,16],[1,14,40,57],[1,14,61,79],
+    [8,15,0,9],[8,15,13,16],[8,15,40,57],[8,15,61,79],
+    [23,36,0,9],[23,36,13,16],[23,36,61,79],
+    [44,51,0,9],[44,51,13,34],[44,51,40,57],[44,51,61,79],
+    [55,59,0,9],[55,59,13,34],[55,59,40,57],[55,59,61,79],
+  ];
+  blocks.forEach(([y1,y2,x1,x2]) => {
+    for(let y=y1;y<=y2;y++) for(let x=x1;x<=x2;x++) {
+      if(w[y][x]===GRASS) w[y][x]=BLDG;
+    }
+  });
+
+  // Park / green areas
+  for(let y=23;y<=36;y++) for(let x=1;x<=9;x++) w[y][x]=PARK;
+  for(let y=44;y<=51;y++) for(let x=40;x<=57;x++) w[y][x]=PARK;
+
+  // Bus stops (just use sidewalk tiles near roads)
+  // Water feature
+  for(let y=55;y<=59;y++) for(let x=35;x<=38;x++) w[y][x]=WATER;
+
+  return w;
+}
+
+const worldMap = buildWorld();
+function isSolid(tx, ty) {
+  if(tx<0||ty<0||tx>=WORLD_W||ty>=WORLD_H) return true;
+  const t = worldMap[ty][tx];
+  return t===BLDG||t===WALL||t===WATER;
+}
+
+// ---- ENTITIES ----
+const PROFS = [
+  {name:"Dr. Kholladi",emoji:"👨‍🏫",subject:"Algorithmique",x:1840,y:1040,color:"#e74c3c",dialog:["Étudiant! Vous êtes en retard!","Venez au tableau, écrivez le tri rapide!"]},
+  {name:"Dr. Meslati",emoji:"👩‍🏫",subject:"Génie Logiciel",x:2040,y:1200,color:"#9b59b6",dialog:["Votre TP est insuffisant!","Revoyez UML et recommencez!"]},
+  {name:"Dr. Boufaida",emoji:"🧑‍🏫",subject:"Base de Données",x:1920,y:1320,color:"#2980b9",dialog:["Connaissez-vous SQL?","Les jointures, c'est fondamental!"]},
+  {name:"Pr. Boudiaf",emoji:"👨‍🔬",subject:"Réseaux",x:2120,y:1080,color:"#e67e22",dialog:["Expliquez le modèle OSI!","7 couches, retenez-les par cœur!"]},
+  {name:"Dr. Redjimi",emoji:"👩‍🔬",subject:"Systèmes",x:1880,y:1440,color:"#27ae60",dialog:["Les processus, les threads...","Tout ça doit être maîtrisé!"]},
+];
+const DIRECTOR = {name:"Directeur Général",emoji:"🏛",x:1960,y:1160,color:"#f39c12",dialog:["Bienvenue à l'ESI!","L'excellence est notre seule voie.","Travaillez dur, l'Algérie a besoin de vous!"]};
+const STUDENTS = [
+  {name:"Amine",emoji:"🧑‍💻",x:600,y:700,color:"#00ff41",dialog:["Salam! Tu as révisé pour le DS?","Moi j'ai rien compris à algo..."]},
+  {name:"Yasmine",emoji:"👩‍💻",x:1400,y:700,color:"#ff69b4",dialog:["Le projet GL me tue!","On fait un groupe de révision?"]},
+  {name:"Karim",emoji:"🧑",x:800,y:900,color:"#ffdd00",dialog:["Il reste du pain à la cafet?","J'ai faim, le cours durait 3h!"]},
+  {name:"Nour",emoji:"👩",x:2200,y:800,color:"#00bcd4",dialog:["J'ai eu 18 au DS d'algo!","C'était pas si difficile..."]},
+];
+const BUS_STOPS = [
+  {name:"Arrêt ESI",x:1580,y:680,dest:{x:1600,y:680}},
+  {name:"Arrêt Centre",x:400,y:680,dest:{x:400,y:680}},
+  {name:"Arrêt Mairie",x:2320,y:680,dest:{x:2320,y:680}},
+  {name:"Arrêt Marché",x:400,y:1520,dest:{x:400,y:1520}},
+];
+const LANDMARKS = [
+  {name:"🏫 CAMPUS ESI",x:1900,y:1100,r:280},
+  {name:"🏙️ CENTRE OUED SMAR",x:500,y:800,r:200},
+  {name:"🌳 PARC MUNICIPAL",x:200,y:1200,r:150},
+  {name:"🏪 MARCHÉ",x:500,y:1700,r:120},
+  {name:"🕌 MOSQUÉE",x:2300,y:900,r:100},
+  {name:"🏥 CLINIQUE",x:2300,y:1700,r:100},
+  {name:"☕ CAFÉ",x:550,y:950,r:80},
+];
+
+// Bus entity
+const bus = {
+  x:400, y:670, route:0, moving:false, timer:0,
+  stops:[{x:400,y:670},{x:1580,y:670},{x:2320,y:670}],
+  stopIndex:0, speed:2.5
+};
+
+// ---- COLORS ----
+const TILE_COLORS = {
+  [ROAD]:'#2c2c2c', [BLDG]:'#4a3728', [GRASS]:'#2d5a27',
+  [WALL]:'#5a5a5a', [WATER]:'#1a4a8a', [SIDE]:'#7a7a7a',
+  [SAND]:'#c8a865', [PARK]:'#3a7a30'
+};
+const TILE_DETAIL = {
+  [ROAD]:'#383838',[GRASS]:'#336629',[PARK]:'#447733'
+};
+
+let notifTimer = 0;
+let lastLocation = "";
+let dialogIdx = 0;
+let currentNPC = null;
+
+function startGame() {
+  playerName = document.getElementById('player-name-input').value.trim() || "ÉTUDIANT";
+  document.getElementById('player-name-input').value = '';
+  document.getElementById('title-screen').style.display = 'none';
+  document.getElementById('hud').style.display = 'block';
+  document.getElementById('score-display').style.display = 'block';
+  document.getElementById('mobile-controls').style.display = window.innerWidth < 700 ? 'block' : 'none';
+  document.getElementById('hud-name').textContent = playerName.toUpperCase();
+  gameRunning = true;
+  resize();
+  setupMobile();
+  notify("🎓 Bienvenue à ESI WORLD, " + playerName + "!");
+  requestAnimationFrame(loop);
+}
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+
+// ---- CAMERA ----
+function updateCamera() {
+  const tw = canvas.width, th = canvas.height;
+  camX = player.x - tw/2;
+  camY = player.y - th/2;
+  camX = Math.max(0, Math.min(WORLD_W*TILE - tw, camX));
+  camY = Math.max(0, Math.min(WORLD_H*TILE - th, camY));
+}
+
+// ---- MOVEMENT ----
+function updatePlayer(dt) {
+  if(dialogOpen || player.onBus) return;
+  const spd = (keys['Shift']||keys['z']||keys['Z']) ? SPRINT : SPEED;
+  player.sprinting = spd === SPRINT;
+  let dx=0, dy=0;
+  if(keys['ArrowLeft']||keys['a']||keys['A']) { dx=-spd; player.dir='left'; }
+  if(keys['ArrowRight']||keys['d']||keys['D']) { dx=spd; player.dir='right'; }
+  if(keys['ArrowUp']||keys['w']||keys['W']) { dy=-spd; player.dir='up'; }
+  if(keys['ArrowDown']||keys['s']||keys['S']) { dy=spd; player.dir='down'; }
+
+  player.moving = dx!==0 || dy!==0;
+
+  // Collision
+  const pw=player.w*0.6, ph=player.h*0.7;
+  const nx=player.x+dx, ny=player.y;
+  const tx1=Math.floor((nx-pw/2)/TILE), ty1=Math.floor((ny-ph/2)/TILE);
+  const tx2=Math.floor((nx+pw/2)/TILE), ty2=Math.floor((ny+ph/2)/TILE);
+  if(!isSolid(tx1,ty1)&&!isSolid(tx2,ty1)&&!isSolid(tx1,ty2)&&!isSolid(tx2,ty2)) player.x=nx;
+
+  const nx2=player.x, ny2=player.y+dy;
+  const tx3=Math.floor((nx2-pw/2)/TILE), ty3=Math.floor((ny2-ph/2)/TILE);
+  const tx4=Math.floor((nx2+pw/2)/TILE), ty4=Math.floor((ny2+ph/2)/TILE);
+  if(!isSolid(tx3,ty3)&&!isSolid(tx4,ty3)&&!isSolid(tx3,ty4)&&!isSolid(tx4,ty4)) player.y=ny2;
+
+  // Stamina
+  if(player.moving && player.sprinting) stamina=Math.max(0,stamina-0.3);
+  else stamina=Math.min(100,stamina+0.2);
+
+  // Animation
+  if(player.moving) {
+    player.animTimer+=dt;
+    if(player.animTimer>150) { player.animFrame=(player.animFrame+1)%4; player.animTimer=0; }
+  } else player.animFrame=0;
+
+  // Location detection
+  detectLocation();
+  // Interaction hint
+  checkNearNPC();
+}
+
+function updateBus(dt) {
+  if(bus.moving) {
+    const dest = bus.stops[bus.stopIndex];
+    const dx = dest.x - bus.x, dy = dest.y - bus.y;
+    const dist = Math.sqrt(dx*dx+dy*dy);
+    if(dist < 5) {
+      bus.x=dest.x; bus.y=dest.y;
+      bus.moving=false; bus.timer=0;
+      if(player.onBus) {
+        player.x=bus.x+20; player.y=bus.y+20;
+        notify("🚌 Arrêt: " + BUS_STOPS[bus.stopIndex % BUS_STOPS.length]?.name || "Terminus");
+      }
+    } else {
+      bus.x += (dx/dist)*bus.speed;
+      bus.y += (dy/dist)*bus.speed;
+      if(player.onBus) { player.x=bus.x+20; player.y=bus.y+20; }
+    }
+  } else {
+    bus.timer += dt;
+    if(bus.timer > 3000) {
+      bus.stopIndex = (bus.stopIndex+1)%bus.stops.length;
+      bus.moving = true;
+      if(player.onBus && bus.stopIndex === 0) {
+        player.onBus=false;
+        notify("🚌 Fin du trajet!");
+      }
+    }
+  }
+}
+
+function detectLocation() {
+  let loc = "🏙️ Oued Smar";
+  for(const lm of LANDMARKS) {
+    const dx=player.x-lm.x, dy=player.y-lm.y;
+    if(Math.sqrt(dx*dx+dy*dy)<lm.r) { loc=lm.name; break; }
+  }
+  const badge = document.getElementById('location-badge');
+  if(loc!==lastLocation) { badge.textContent=loc; badge.style.display='block'; lastLocation=loc; }
+}
+
+function checkNearNPC() {
+  const hint = document.getElementById('interaction-hint');
+  const allNPCs = [...PROFS, DIRECTOR, ...STUDENTS];
+  for(const npc of allNPCs) {
+    const dx=player.x-npc.x, dy=player.y-npc.y;
+    if(Math.sqrt(dx*dx+dy*dy)<60) {
+      hint.textContent = "E — Parler à " + npc.name;
+      hint.style.display='block';
+      return;
+    }
+  }
+  for(const stop of BUS_STOPS) {
+    const dx=player.x-stop.x, dy=player.y-stop.y;
+    if(Math.sqrt(dx*dx+dy*dy)<60) {
+      hint.textContent = "B — Prendre le bus";
+      hint.style.display='block';
+      return;
+    }
+  }
+  hint.style.display='none';
+}
+
+function tryInteract() {
+  if(dialogOpen) { advanceDialog(); return; }
+  const allNPCs = [...PROFS, DIRECTOR, ...STUDENTS];
+  for(const npc of allNPCs) {
+    const dx=player.x-npc.x, dy=player.y-npc.y;
+    if(Math.sqrt(dx*dx+dy*dy)<70) { startDialog(npc); return; }
+  }
+}
+
+function tryBus() {
+  if(player.onBus) { player.onBus=false; notify("Vous descendez du bus."); return; }
+  for(const stop of BUS_STOPS) {
+    const dx=player.x-stop.x, dy=player.y-stop.y;
+    if(Math.sqrt(dx*dx+dy*dy)<70) {
+      player.onBus=true;
+      money=Math.max(0,money-50);
+      notify("🚌 Bus pris! -50 DA | Destination: prochain arrêt");
+      bus.moving=true;
+      return;
+    }
+  }
+}
+
+function startDialog(npc) {
+  currentNPC = npc;
+  dialogIdx = 0;
+  dialogOpen = true;
+  document.getElementById('dialog-box').style.display='block';
+  document.getElementById('dialog-speaker').textContent = npc.emoji + " " + npc.name + (npc.subject ? " — " + npc.subject : "");
+  showDialogLine();
+}
+
+function showDialogLine() {
+  if(!currentNPC) return;
+  const lines = currentNPC.dialog;
+  document.getElementById('dialog-text').textContent = lines[dialogIdx] || "";
+  const choicesEl = document.getElementById('dialog-choices');
+  choicesEl.innerHTML='';
+  if(dialogIdx < lines.length-1) {
+    const btn = document.createElement('button');
+    btn.className='dchoice'; btn.textContent='► Continuer';
+    btn.onclick=advanceDialog; choicesEl.appendChild(btn);
+  } else {
+    // Final options
+    const isProfessor = PROFS.includes(currentNPC);
+    if(isProfessor) {
+      [{t:"📚 Étudier (+grade)",fn:()=>{grade=Math.min(100,grade+8);notify("📚 Vous avez étudié! Grade +8");closeDialog();}},
+       {t:"😎 Ignorer",fn:()=>{wanted=Math.min(3,wanted+1);notify("⚠️ Wanted +1");closeDialog();}},
+       {t:"🤝 Au revoir",fn:closeDialog}
+      ].forEach(o=>{const b=document.createElement('button');b.className='dchoice';b.textContent=o.t;b.onclick=o.fn;document.getElementById('dialog-choices').appendChild(b);});
+    } else {
+      [{t:"👋 Au revoir",fn:closeDialog},
+       {t:"☕ Aller au café (+moral)",fn:()=>{money=Math.max(0,money-100);hp=Math.min(100,hp+10);notify("☕ Café pris! +HP, -100 DA");closeDialog();}}
+      ].forEach(o=>{const b=document.createElement('button');b.className='dchoice';b.textContent=o.t;b.onclick=o.fn;document.getElementById('dialog-choices').appendChild(b);});
+    }
+  }
+}
+
+function advanceDialog() {
+  if(!currentNPC) return;
+  if(dialogIdx < currentNPC.dialog.length-1) { dialogIdx++; showDialogLine(); }
+}
+
+function closeDialog() {
+  dialogOpen=false;
+  currentNPC=null;
+  document.getElementById('dialog-box').style.display='none';
+}
+
+function notify(msg) {
+  const el=document.getElementById('notification');
+  el.textContent=msg; el.style.display='block';
+  clearTimeout(notifTimer);
+  notifTimer=setTimeout(()=>el.style.display='none', 3000);
+}
+
+// ---- DRAWING ----
+function drawWorld() {
+  const startX=Math.max(0,Math.floor(camX/TILE));
+  const startY=Math.max(0,Math.floor(camY/TILE));
+  const endX=Math.min(WORLD_W,startX+Math.ceil(canvas.width/TILE)+2);
+  const endY=Math.min(WORLD_H,startY+Math.ceil(canvas.height/TILE)+2);
+
+  for(let ty=startY;ty<endY;ty++) {
+    for(let tx=startX;tx<endX;tx++) {
+      const t=worldMap[ty][tx];
+      const sx=tx*TILE-camX, sy=ty*TILE-camY;
+      ctx.fillStyle=TILE_COLORS[t]||'#2d5a27';
+      ctx.fillRect(sx,sy,TILE,TILE);
+
+      // Details
+      if(t===ROAD) {
+        ctx.fillStyle='#333'; ctx.fillRect(sx+1,sy+1,TILE-2,TILE-2);
+        // Road markings
+        if(ty%3===0){ctx.fillStyle='#555';ctx.fillRect(sx+TILE/2-2,sy+2,4,TILE-4);}
+      } else if(t===GRASS||t===PARK) {
+        // Grass texture dots
+        ctx.fillStyle=TILE_DETAIL[t];
+        for(let i=0;i<3;i++){ctx.fillRect(sx+5+i*12,sy+5+((tx+i)%3)*12,3,3);}
+      } else if(t===BLDG) {
+        ctx.fillStyle='#5a4535';ctx.fillRect(sx+2,sy+2,TILE-4,TILE-4);
+        ctx.fillStyle='#7a6050';ctx.fillRect(sx+6,sy+6,8,8);ctx.fillRect(sx+TILE-14,sy+6,8,8);
+        ctx.fillStyle='#3a2820';ctx.fillRect(sx+TILE/2-3,sy+TILE-10,6,8);
+      } else if(t===WALL) {
+        ctx.fillStyle='#6a6a6a';ctx.fillRect(sx+1,sy+1,TILE-2,TILE-2);
+        ctx.fillStyle='#888';
+        for(let i=0;i<4;i++) ctx.fillRect(sx+3,sy+3+i*9,TILE-6,6);
+      } else if(t===WATER) {
+        ctx.fillStyle='#1e5aa8';ctx.fillRect(sx+1,sy+1,TILE-2,TILE-2);
+        ctx.fillStyle='rgba(255,255,255,0.15)';
+        ctx.fillRect(sx+4,sy+TILE/2-2,TILE-8,4);
+      } else if(t===SAND) {
+        ctx.fillStyle='#d4b070';ctx.fillRect(sx+1,sy+1,TILE-2,TILE-2);
+      } else if(t===SIDE) {
+        ctx.fillStyle='#888';ctx.fillRect(sx+1,sy+1,TILE-2,TILE-2);
+        ctx.strokeStyle='#666';ctx.lineWidth=0.5;ctx.strokeRect(sx+3,sy+3,TILE-6,TILE-6);
+      }
+    }
+  }
+}
+
+function drawESIBuilding() {
+  // Draw ESI label on campus
+  const esiX = 48*TILE - camX;
+  const esiY = 29*TILE - camY;
+  if(esiX>-200&&esiX<canvas.width+200&&esiY>-100&&esiY<canvas.height+100) {
+    ctx.save();
+    ctx.fillStyle='rgba(0,0,0,0.7)';
+    ctx.fillRect(esiX-60,esiY-20,120,36);
+    ctx.fillStyle='#ffdd00';
+    ctx.font='bold 10px "Press Start 2P"';
+    ctx.textAlign='center';
+    ctx.fillText('ESI',esiX,esiY-4);
+    ctx.fillStyle='#aaa';
+    ctx.font='7px "Press Start 2P"';
+    ctx.fillText('OUED SMAR',esiX,esiY+10);
+    ctx.restore();
+  }
+}
+
+function drawNPCs() {
+  const allNPCs=[...PROFS,DIRECTOR,...STUDENTS];
+  for(const npc of allNPCs) {
+    const sx=npc.x-camX, sy=npc.y-camY;
+    if(sx<-60||sx>canvas.width+60||sy<-60||sy>canvas.height+60) continue;
+    // Shadow
+    ctx.fillStyle='rgba(0,0,0,0.3)';
+    ctx.beginPath();ctx.ellipse(sx,sy+14,10,5,0,0,Math.PI*2);ctx.fill();
+    // Body
+    ctx.fillStyle=npc.color||'#fff';
+    ctx.fillRect(sx-8,sy-20,16,22);
+    // Head
+    ctx.fillStyle='#f5c5a3';
+    ctx.fillRect(sx-7,sy-32,14,14);
+    // Eyes
+    ctx.fillStyle='#000';
+    ctx.fillRect(sx-4,sy-27,3,3);ctx.fillRect(sx+1,sy-27,3,3);
+    // Name tag
+    ctx.fillStyle='rgba(0,0,0,0.8)';
+    const tw=ctx.measureText(npc.name).width+10;
+    ctx.fillRect(sx-tw/2,sy-44,tw,13);
+    ctx.fillStyle=npc.color||'#fff';
+    ctx.font='7px "Press Start 2P"';
+    ctx.textAlign='center';
+    ctx.fillText(npc.name,sx,sy-34);
+
+    // Interact indicator
+    const dx=player.x-npc.x, dy=player.y-npc.y;
+    if(Math.sqrt(dx*dx+dy*dy)<70) {
+      ctx.fillStyle='#00ff41';
+      ctx.font='11px "Press Start 2P"';
+      ctx.fillText('[E]',sx,sy-50);
+    }
+  }
+}
+
+function drawBusStops() {
+  BUS_STOPS.forEach(stop => {
+    const sx=stop.x-camX, sy=stop.y-camY;
+    if(sx<-80||sx>canvas.width+80||sy<-80||sy>canvas.height+80) return;
+    ctx.fillStyle='#ffdd00';
+    ctx.fillRect(sx-3,sy-40,6,40);
+    ctx.fillStyle='#ffdd00';
+    ctx.fillRect(sx-20,sy-42,40,16);
+    ctx.fillStyle='#000';
+    ctx.font='7px "Press Start 2P"';
+    ctx.textAlign='center';
+    ctx.fillText('BUS',sx,sy-30);
+  });
+}
+
+function drawBus() {
+  const sx=bus.x-camX, sy=bus.y-camY;
+  if(sx<-100||sx>canvas.width+100||sy<-100||sy>canvas.height+100) return;
+  // Bus body
+  ctx.fillStyle='#e67e22';
+  ctx.fillRect(sx-30,sy-18,60,30);
+  ctx.fillStyle='#d35400';
+  ctx.fillRect(sx-30,sy-20,60,6);
+  // Windows
+  ctx.fillStyle='#add8e6';
+  for(let i=-2;i<=2;i++) ctx.fillRect(sx+i*10-4,sy-14,8,10);
+  // Wheels
+  ctx.fillStyle='#222';
+  ctx.beginPath();ctx.arc(sx-18,sy+12,7,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(sx+18,sy+12,7,0,Math.PI*2);ctx.fill();
+  // Label
+  ctx.fillStyle='#fff';
+  ctx.font='7px "Press Start 2P"';
+  ctx.textAlign='center';
+  ctx.fillText('🚌 ESI',sx,sy-24);
+}
+
+function drawPlayer() {
+  const sx = player.x - camX, sy = player.y - camY;
+  const frame = player.moving ? player.animFrame : 0;
+  const legOff = player.moving ? Math.sin(frame*1.57)*4 : 0;
+
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.35)';
+  ctx.beginPath();ctx.ellipse(sx,sy+14,10,5,0,0,Math.PI*2);ctx.fill();
+
+  // Legs
+  ctx.fillStyle='#2c3e50';
+  ctx.fillRect(sx-6,sy+2,8,14+legOff);
+  ctx.fillRect(sx-1,sy+2,8,14-legOff);
+  // Shoes
+  ctx.fillStyle='#1a252f';
+  ctx.fillRect(sx-7,sy+14+legOff,9,5);
+  ctx.fillRect(sx,sy+14-legOff,9,5);
+
+  // Body (green ESI jacket)
+  ctx.fillStyle='#1a6b3a';
+  ctx.fillRect(sx-9,sy-18,18,22);
+  // ESI logo stripe
+  ctx.fillStyle='#ffdd00';
+  ctx.fillRect(sx-9,sy-10,4,10);
+
+  // Arms
+  ctx.fillStyle='#1a6b3a';
+  const armSwing = player.moving ? Math.sin(frame*1.57)*5 : 0;
+  ctx.fillRect(sx-14,sy-16,6,16-armSwing);
+  ctx.fillRect(sx+8,sy-16,6,16+armSwing);
+
+  // Head
+  ctx.fillStyle='#f5c5a3';
+  ctx.fillRect(sx-8,sy-32,16,16);
+  // Hair
+  ctx.fillStyle='#3d2000';
+  ctx.fillRect(sx-8,sy-33,16,6);
+  // Eyes
+  ctx.fillStyle='#000';
+  if(player.dir==='left'){ctx.fillRect(sx-6,sy-26,3,3);}
+  else if(player.dir==='right'){ctx.fillRect(sx+3,sy-26,3,3);}
+  else{ctx.fillRect(sx-5,sy-26,3,3);ctx.fillRect(sx+2,sy-26,3,3);}
+  // Mouth smile
+  ctx.fillStyle='#c0784a';
+  ctx.fillRect(sx-3,sy-20,6,2);
+
+  // Name above player
+  ctx.fillStyle='rgba(0,0,0,0.7)';
+  const nw=ctx.measureText(playerName).width+12;
+  ctx.fillRect(sx-nw/2,sy-48,nw,14);
+  ctx.fillStyle='#00ff41';
+  ctx.font='8px "Press Start 2P"';
+  ctx.textAlign='center';
+  ctx.fillText(playerName.toUpperCase(),sx,sy-38);
+
+  // Backpack
+  ctx.fillStyle='#8B4513';
+  ctx.fillRect(sx+9,sy-22,7,18);
+  ctx.fillStyle='#6B3410';
+  ctx.fillRect(sx+10,sy-16,5,8);
+}
+
+function drawMinimap() {
+  const mc=mmCanvas, mcx=mmCtx;
+  const scaleX=mc.width/WORLD_W, scaleY=mc.height/WORLD_H;
+  mcx.fillStyle='#111'; mcx.fillRect(0,0,mc.width,mc.height);
+
+  // Draw tiles
+  for(let ty=0;ty<WORLD_H;ty++) for(let tx=0;tx<WORLD_W;tx++) {
+    const t=worldMap[ty][tx];
+    mcx.fillStyle=t===ROAD?'#555':t===BLDG?'#7a5a45':t===GRASS?'#2d5a27':t===WALL?'#888':t===WATER?'#1a4a8a':t===SAND?'#c8a865':t===PARK?'#3a7a30':'#444';
+    mcx.fillRect(tx*scaleX,ty*scaleY,scaleX+0.5,scaleY+0.5);
+  }
+  // ESI highlight
+  mcx.fillStyle='rgba(255,221,0,0.4)';
+  mcx.fillRect(41*scaleX,23*scaleY,16*scaleX,14*scaleY);
+  // Player dot
+  mcx.fillStyle='#00ff41';
+  const px=player.x/TILE*scaleX, py=player.y/TILE*scaleY;
+  mcx.beginPath();mcx.arc(px,py,3,0,Math.PI*2);mcx.fill();
+  // Bus dot
+  mcx.fillStyle='#e67e22';
+  const bx=bus.x/TILE*scaleX, by=bus.y/TILE*scaleY;
+  mcx.beginPath();mcx.arc(bx,by,2.5,0,Math.PI*2);mcx.fill();
+}
+
+function updateHUD() {
+  document.getElementById('hp-fill').style.width=hp+'%';
+  document.getElementById('stamina-fill').style.width=stamina+'%';
+  document.getElementById('hud-money').textContent=money;
+  document.getElementById('hud-grade').textContent=Math.round(grade);
+  const stars = '★'.repeat(wanted)+'☆'.repeat(3-wanted);
+  document.getElementById('wanted-stars').textContent=stars;
+}
+
+let lastTime=0;
+function loop(ts) {
+  if(!gameRunning){requestAnimationFrame(loop);return;}
+  const dt=ts-lastTime; lastTime=ts;
+
+  updatePlayer(dt);
+  updateBus(dt);
+  updateCamera();
+
+  // Draw
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawWorld();
+  drawESIBuilding();
+  drawBusStops();
+  drawBus();
+  drawNPCs();
+  drawPlayer();
+  drawMinimap();
+  updateHUD();
+
+  // Ambient: slowly restore hp
+  if(!dialogOpen) hp=Math.min(100,hp+0.005);
+
+  requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>
